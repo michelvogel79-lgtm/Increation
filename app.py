@@ -1,5 +1,6 @@
 import streamlit as st
 from groq import Groq
+import base64
 
 st.set_page_config(
     page_title="increation - KI Studio",
@@ -10,11 +11,56 @@ st.set_page_config(
 LOGO = "🚀"
 LOGO_NAME = "increation"
 
+# ====== HINTERGRUND-BILD ======
+def set_background(image_file):
+    with open(image_file, "rb") as f:
+        img_data = f.read()
+    b64_encoded = base64.b64encode(img_data).decode()
+    page_bg_img = f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/png;base64,{b64_encoded}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    
+    /* Optional: Overlay für bessere Lesbarkeit */
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        z-index: -1;
+    }}
+    
+    /* Sidebar transparent */
+    [data-testid="stSidebar"] {{
+        background-color: rgba(20, 20, 30, 0.8);
+    }}
+    </style>
+    """
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+
+# Hintergrund setzen (Bild muss im selben Verzeichnis wie app.py sein)
+try:
+    set_background("background.jpg")
+except:
+    try:
+        set_background("background.png")
+    except:
+        st.warning("Kein Hintergrundbild gefunden - lade 'background.jpg' ins Repo hoch!")
+
+# Stylischer Header mit Logo
 st.markdown(f"""
     <div style="text-align: center; padding: 20px;">
-        <h1 style="font-size: 60px;">{LOGO}</h1>
-        <h1 style="margin-top: -20px;">{LOGO_NAME} KI Studio</h1>
-        <p style="color: #888; font-size: 18px;">Powered by Groq ⚡</p>
+        <h1 style="font-size: 60px; color: white;">{LOGO}</h1>
+        <h1 style="margin-top: -20px; color: white;">{LOGO_NAME} KI Studio</h1>
+        <p style="color: #ccc; font-size: 18px;">Powered by Groq ⚡</p>
     </div>
 """, unsafe_allow_html=True)
 
