@@ -3,6 +3,9 @@ from groq import Groq
 import base64
 import requests
 from urllib.parse import quote
+from PIL import Image
+import io
+import zipfile
 
 st.set_page_config(
     page_title="increation - KI Studio",
@@ -79,8 +82,8 @@ except:
 
 st.divider()
 
-# ====== TABS FÜR VERSCHIEDENE FUNKTIONEN ======
-tab1, tab2, tab3 = st.tabs(["💬 KI-Chat", "🎨 Bild-Generator", "💻 Code-Helper"])
+# ====== TABS ======
+tab1, tab2, tab3, tab4 = st.tabs(["💬 KI-Chat", "🎨 Bild-Generator", "💻 Code-Helper", "🎬 Video-Ersteller"])
 
 # ====== TAB 1: CHAT ======
 with tab1:
@@ -156,14 +159,14 @@ with tab1:
 # ====== TAB 2: BILD-GENERATOR ======
 with tab2:
     st.header("🎨 Bild-Generator")
-    st.write("Erstelle einzigartige Bilder mit KI - komplett kostenlos!")
+    st.write("Erstelle einzigartige Bilder mit KI!")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         img_prompt = st.text_area(
             "Beschreibe das Bild:",
-            placeholder="z.B. Ein futuristischer Roboter in einer neon-beleuchteten Stadt, 4k, detailliert",
+            placeholder="z.B. Ein futuristischer Roboter in einer neon-beleuchteten Stadt",
             height=100
         )
     
@@ -173,8 +176,7 @@ with tab2:
             "künstlerisch",
             "anime",
             "digital art",
-            "3D render",
-            "pixel art"
+            "3D render"
         ])
         
         img_size = st.selectbox("Größe:", [
@@ -183,33 +185,25 @@ with tab2:
             "768x1024 (portrait)"
         ])
     
-    if st.button("🎨 Bild erstellen", use_container_width=True):
+    if st.button("🎨 Bild erstellen", use_container_width=True, key="gen_img"):
         if img_prompt:
-            with st.spinner("Bild wird erstellt... (kann 10-30 Sekunden dauern)"):
+            with st.spinner("Bild wird erstellt..."):
                 try:
-                    # Pollinations.ai - kostenlos, kein Key nötig!
                     full_prompt = f"{img_prompt}, {img_style}, high quality, 4k, detailed"
                     encoded_prompt = quote(full_prompt)
-                    
-                    # Größen mapping
                     sizes = {
                         "1024x1024 (quadratisch)": "1024x1024",
                         "1024x768 (landscape)": "1024x768",
                         "768x1024 (portrait)": "768x1024"
                     }
                     size = sizes[img_size]
-                    
-                    # URL zusammenbauen
                     image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={size.split('x')[0]}&height={size.split('x')[1]}&nologo=true"
                     
-                    # Bild herunterladen
                     response = requests.get(image_url, timeout=60)
                     
                     if response.status_code == 200:
-                        st.success("✅ Bild erfolgreich erstellt!")
+                        st.success("✅ Bild erstellt!")
                         st.image(response.content, caption=img_prompt, use_container_width=True)
-                        
-                        # Download-Button
                         st.download_button(
                             label="💾 Bild herunterladen",
                             data=response.content,
@@ -217,74 +211,55 @@ with tab2:
                             mime="image/png"
                         )
                     else:
-                        st.error("❌ Bild konnte nicht erstellt werden. Versuche es erneut!")
+                        st.error("❌ Fehler beim Erstellen")
                 except Exception as e:
                     st.error(f"Fehler: {e}")
         else:
-            st.warning("⚠️ Bitte gib eine Beschreibung ein!")
+            st.warning("⚠️ Bitte Beschreibung eingeben!")
 
 # ====== TAB 3: CODE-HELPER ======
 with tab3:
     st.header("💻 Code-Helper")
-    st.write("Lass die KI Code für dich schreiben!")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         code_request = st.text_area(
             "Was für Code brauchst du?",
-            placeholder="z.B. Eine Python-Funktion, die Primzahlen berechnet",
+            placeholder="z.B. Eine Python-Funktion für Primzahlen",
             height=100
         )
     
     with col2:
-        code_language = st.selectbox("Programmiersprache:", [
-            "Python",
-            "JavaScript",
-            "HTML/CSS",
-            "Java",
-            "C++",
-            "SQL"
+        code_language = st.selectbox("Sprache:", [
+            "Python", "JavaScript", "HTML/CSS", "Java", "C++", "SQL"
         ])
     
-    if st.button("💻 Code generieren", use_container_width=True):
+    if st.button("💻 Code generieren", use_container_width=True, key="gen_code"):
         if code_request:
             with st.spinner("Code wird geschrieben..."):
                 try:
-                    full_prompt = f"Schreibe {code_language} Code für: {code_request}. Gib nur den Code aus, mit Kommentaren erklärt."
-                    
+                    full_prompt = f"Schreibe {code_language} Code für: {code_request}. Nur Code mit Kommentaren."
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "user", "content": full_prompt}],
                         max_tokens=1500,
                         temperature=0.3
                     )
-                    
                     code = response.choices[0].message.content
                     
-                    # Code aus Markdown extrahieren falls ``` vorhanden
                     if "```" in code:
                         parts = code.split("```")
-                        if len(parts) >= 2:
-                            code_clean = parts[1].strip()
-                            # Sprache entfernen falls am Anfang
-                            if code_clean.startswith(code_language.lower()):
-                                code_clean = code_clean[len(code_language):].strip()
+                        code_clean = parts[1].strip() if len(parts) >= 2 else code
+                        if code_clean.startswith(code_language.lower()):
+                            code_clean = code_clean[len(code_language):].strip()
                     else:
                         code_clean = code
                     
                     st.success("✅ Code generiert!")
                     st.code(code_clean, language=code_language.lower())
                     
-                    # Download-Button
-                    extensions = {
-                        "Python": "py",
-                        "JavaScript": "js",
-                        "HTML/CSS": "html",
-                        "Java": "java",
-                        "C++": "cpp",
-                        "SQL": "sql"
-                    }
+                    extensions = {"Python": "py", "JavaScript": "js", "HTML/CSS": "html", "Java": "java", "C++": "cpp", "SQL": "sql"}
                     st.download_button(
                         label="💾 Code herunterladen",
                         data=code_clean,
@@ -294,7 +269,136 @@ with tab3:
                 except Exception as e:
                     st.error(f"Fehler: {e}")
         else:
-            st.warning("⚠️ Bitte beschreibe was du brauchst!")
+            st.warning("⚠️ Bitte Beschreibung eingeben!")
+
+# ====== TAB 4: VIDEO-ERSTELLER ======
+with tab4:
+    st.header("🎬 Video-Ersteller")
+    st.write("Erstelle animierte Slideshows aus deinen Bildern!")
+    
+    st.info("💡 Lade 2-10 Bilder hoch und erstelle ein cooles Video mit Übergängen!")
+    
+    uploaded_files = st.file_uploader(
+        "Bilder hochladen (JPG, PNG)",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True
+    )
+    
+    if uploaded_files:
+        st.write(f"📸 {len(uploaded_files)} Bilder hochgeladen")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            duration = st.slider("Dauer pro Bild (Sekunden):", 1, 10, 3)
+        
+        with col2:
+            transition = st.selectbox("Übergang:", [
+                "fade",
+                "slide",
+                "zoom"
+            ])
+        
+        st.markdown("### Vorschau")
+        cols = st.columns(min(len(uploaded_files), 4))
+        for i, uploaded_file in enumerate(uploaded_files[:4]):
+            with cols[i]:
+                image = Image.open(uploaded_file)
+                st.image(image, caption=f"Bild {i+1}", use_container_width=True)
+        
+        if len(uploaded_files) > 4:
+            st.write(f"... und {len(uploaded_files) - 4} weitere")
+    
+    if uploaded_files and len(uploaded_files) >= 2:
+        if st.button("🎬 Video erstellen", use_container_width=True, key="gen_video"):
+            with st.spinner("Video wird erstellt... Das kann 1-2 Minuten dauern"):
+                try:
+                    # Erstelle ZIP mit allen Bildern + Anleitung
+                    zip_buffer = io.BytesIO()
+                    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for i, uploaded_file in enumerate(uploaded_files):
+                            image = Image.open(uploaded_file)
+                            img_byte_arr = io.BytesIO()
+                            image.save(img_byte_arr, format='PNG')
+                            zip_file.writestr(f"image_{i+1}.png", img_byte_arr.getvalue())
+                        
+                        # Erstelle HTML-Animation
+                        images_html = ""
+                        for i, uploaded_file in enumerate(uploaded_files):
+                            img_base64 = base64.b64encode(uploaded_file.read()).decode()
+                            images_html += f'<img src="data:image/png;base64,{img_base64}" class="slide" id="slide{i}">'
+                        
+                        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {{ margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }}
+.slide {{ 
+    position: absolute; 
+    width: 100%; 
+    max-width: 800px; 
+    opacity: 0; 
+    transition: opacity {duration}s ease-in-out;
+    border-radius: 20px;
+}}
+@keyframes fade {{
+    0% {{ opacity: 0; }}
+    20% {{ opacity: 1; }}
+    80% {{ opacity: 1; }}
+    100% {{ opacity: 0; }}
+}}
+#slide0 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 0}s; }}
+#slide1 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 1}s; }}
+#slide2 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 2}s; }}
+#slide3 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 3}s; }}
+#slide4 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 4}s; }}
+#slide5 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 5}s; }}
+#slide6 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 6}s; }}
+#slide7 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 7}s; }}
+#slide8 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 8}s; }}
+#slide9 {{ animation: fade {duration * len(uploaded_files)}s infinite {duration * 9}s; }}
+</style>
+</head>
+<body>
+{images_html}
+</body>
+</html>
+"""
+                        zip_file.writestr("slideshow.html", html_content)
+                        zip_file.writestr("README.txt", f"""
+🎬 Dein Video ist fertig!
+
+Anleitung:
+1. Entpacke diese ZIP-Datei
+2. Öffne die 'slideshow.html' Datei in deinem Browser
+3. Das Video startet automatisch!
+
+Einstellungen:
+- {len(uploaded_files)} Bilder
+- {duration} Sekunden pro Bild
+- Übergang: {transition}
+
+Erstellt mit increation KI Studio
+""")
+                    
+                    zip_buffer.seek(0)
+                    
+                    st.success("✅ Video erstellt!")
+                    st.balloons()
+                    
+                    st.download_button(
+                        label="💾 Video (ZIP mit HTML) herunterladen",
+                        data=zip_buffer.getvalue(),
+                        file_name="increation_video.zip",
+                        mime="application/zip"
+                    )
+                    
+                    st.info("💡 Entpacke die ZIP und öffne 'slideshow.html' im Browser!")
+                except Exception as e:
+                    st.error(f"Fehler: {e}")
+    elif uploaded_files and len(uploaded_files) < 2:
+        st.warning("⚠️ Bitte mindestens 2 Bilder hochladen!")
 
 # Sidebar Info
 st.sidebar.markdown("---")
@@ -304,8 +408,9 @@ st.sidebar.info("""
 
 Features:
 - 💬 KI-Chat
-- 🎨 Bild-Generator
+- 🎨 Bild-Generator  
 - 💻 Code-Helper
+- 🎬 Video-Ersteller
 
 Powered by Groq ⚡
 100% kostenlos
