@@ -78,24 +78,6 @@ except:
         </div>
     """, unsafe_allow_html=True)
 
-# ====== SPENDEN-BUTTON (KO-FI) ======
-st.markdown("---")
-st.markdown("""
-<p style="text-align:center; color:#ccc; font-size:16px; margin-bottom:15px;">
-    💝 Gefällt dir die Plattform? Unterstütze uns mit einer Spende!
-</p>
-<div style="text-align: center;">
-    <a href="https://ko-fi.com/increate" target="_blank">
-        <button style="padding:15px 40px; background:linear-gradient(135deg, #FF5E5B 0%, #FF8A65 100%); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer; font-size:18px; box-shadow: 0 4px 15px rgba(255, 94, 91, 0.4);">
-            ☕ Auf Ko-fi unterstützen
-        </button>
-    </a>
-</div>
-<p style="text-align:center; color:#888; font-size:12px; margin-top:10px;">
-    100% freiwillig • Keine Gebühren für dich
-</p>
-""", unsafe_allow_html=True)
-
 st.divider()
 
 # ====== TABS ======
@@ -151,6 +133,17 @@ with tab1:
             st.write(message["content"])
     
     prompt = st.chat_input("Stelle deine Frage...", key="chat_input")
+    
+    # ====== SPENDEN-BUTTON (METALLIC-BLAU) ======
+    st.markdown("""
+    <div style="text-align: center; margin-top: 10px;">
+        <a href="https://ko-fi.com/increate" target="_blank" style="text-decoration: none;">
+            <button style="padding: 6px 18px; background: linear-gradient(135deg, #4A90E2 0%, #2C5F8D 50%, #1E3A5F 100%); color: #E0F0FF; border: 1px solid #6BB6FF; border-radius: 15px; font-weight: 600; cursor: pointer; font-size: 12px; box-shadow: 0 2px 6px rgba(74, 144, 226, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);">
+                ☕ Unterstützen
+            </button>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
     
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
