@@ -4,7 +4,7 @@ import base64
 
 st.set_page_config(
     page_title="increation - KI Studio",
-    page_icon="🧠",  # Browser-Tab Icon
+    page_icon="🧠",
     layout="wide"
 )
 
@@ -44,7 +44,7 @@ def set_background(image_file):
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
 # ====== LOGO-BILD ======
-def set_logo(image_file, width=150):
+def set_logo(image_file, width=200):
     with open(image_file, "rb") as f:
         img_data = f.read()
     b64_encoded = base64.b64encode(img_data).decode()
@@ -60,19 +60,18 @@ def set_logo(image_file, width=150):
 # Hintergrund setzen
 try:
     set_background("background.jpg")
-except Exception as e:
-    st.warning(f"⚠️ Hintergrundbild konnte nicht geladen werden")
+except:
+    pass
 
-# Logo setzen
+# Logo setzen (mit Fallback auf Emoji)
 try:
     set_logo("logo.png", width=200)
-except Exception as e:
-    st.warning(f"⚠️ Logo konnte nicht geladen werden - Emoji wird verwendet")
+except:
     st.markdown(f"""
         <div style="text-align: center; padding: 20px;">
             <h1 style="font-size: 80px;">🧠</h1>
-            <h1 style="margin-top: -20px;">{LOGO_NAME} KI Studio</h1>
-            <p style="color: #888; font-size: 18px;">Powered by Groq ⚡</p>
+            <h1>{LOGO_NAME} KI Studio</h1>
+            <p style="color: #888;">Powered by Groq ⚡</p>
         </div>
     """, unsafe_allow_html=True)
 
