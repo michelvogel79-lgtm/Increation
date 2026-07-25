@@ -1,10 +1,24 @@
 import streamlit as st
 from groq import Groq
 
-st.set_page_config(page_title="Meine KI-Plattform", page_icon="🤖")
+st.set_page_config(
+    page_title="increation - KI Studio",
+    page_icon="🚀",
+    layout="wide"
+)
 
-st.title("🤖 Meine KI-Plattform")
-st.write("Willkommen! Diese Plattform ist komplett kostenlos mit Groq!")
+LOGO = "🚀"
+LOGO_NAME = "increation"
+
+st.markdown(f"""
+    <div style="text-align: center; padding: 20px;">
+        <h1 style="font-size: 60px;">{LOGO}</h1>
+        <h1 style="margin-top: -20px;">{LOGO_NAME} KI Studio</h1>
+        <p style="color: #888; font-size: 18px;">Powered by Groq ⚡</p>
+    </div>
+""", unsafe_allow_html=True)
+
+st.divider()
 
 st.header("💬 KI-Chat")
 
@@ -12,41 +26,53 @@ try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 except:
     st.error("Bitte GROQ_API_KEY in Streamlit Secrets setzen!")
-    st.info("👉 Holen Sie sich einen kostenlosen Key auf https://console.groq.com/")
     st.stop()
 
 client = Groq(api_key=GROQ_API_KEY)
 
-# Top Modelle bei Groq
-model_choice = st.selectbox("Modell wählen:", [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-70b-versatile",
-    "llama-3.1-8b-instant",
-    "mixtral-8x7b-32768",
-    "gemma2-9b-it"
-])
+with st.sidebar:
+    st.markdown(f"""
+        <div style="text-align: center; padding: 10px;">
+            <h1 style="font-size: 50px;">{LOGO}</h1>
+            <h3>increation</h3>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    model_choice = st.selectbox("🎯 Modell:", [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it"
+    ])
+    
+    st.markdown("---")
+    
+    if st.button("🗑️ Chat löschen", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+    
+    st.markdown("### ℹ️ Info")
+    st.info("**increation KI Studio** - Powered by Groq")
 
-# Chat-Verlauf
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Zeige Chat-Verlauf
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# User Input
 prompt = st.chat_input("Stelle deine Frage...")
 
 if prompt:
-    # User-Nachricht anzeigen
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
     
-    # KI-Antwort generieren
     with st.chat_message("assistant"):
-        with st.spinner("KI denkt nach..."):
+        with st.spinner(f"{LOGO} denkt nach..."):
             try:
                 response = client.chat.completions.create(
                     model=model_choice,
@@ -59,20 +85,3 @@ if prompt:
                 st.session_state.messages.append({"role": "assistant", "content": answer})
             except Exception as e:
                 st.error(f"Fehler: {e}")
-
-# Clear-Button
-if st.sidebar.button("🗑️ Chat löschen"):
-    st.session_state.messages = []
-    st.rerun()
-
-st.sidebar.markdown("### Info")
-st.sidebar.info("Powered by Groq ⚡ - ultraschnell & kostenlos")
-
-st.sidebar.markdown("### Modelle")
-st.sidebar.write("""
-- 🦙 Llama 3.3 70B
-- 🦙 Llama 3.1 70B  
-- 🦙 Llama 3.1 8B
-- 🎭 Mixtral 8x7B
-- 💎 Gemma2 9B
-""")
