@@ -4,11 +4,10 @@ import base64
 
 st.set_page_config(
     page_title="increation - KI Studio",
-    page_icon="🚀",
+    page_icon="🧠",  # Browser-Tab Icon
     layout="wide"
 )
 
-LOGO = "🚀"
 LOGO_NAME = "increation"
 
 # ====== HINTERGRUND-BILD ======
@@ -44,20 +43,38 @@ def set_background(image_file):
     """
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
+# ====== LOGO-BILD ======
+def set_logo(image_file, width=150):
+    with open(image_file, "rb") as f:
+        img_data = f.read()
+    b64_encoded = base64.b64encode(img_data).decode()
+    logo_html = f"""
+    <div style="text-align: center; padding: 20px;">
+        <img src="data:image/png;base64,{b64_encoded}" width="{width}" style="border-radius: 20px; box-shadow: 0 0 30px rgba(100, 200, 255, 0.5);">
+        <h1 style="margin-top: 20px; color: white;">{LOGO_NAME} KI Studio</h1>
+        <p style="color: #ccc; font-size: 18px;">Powered by Groq ⚡</p>
+    </div>
+    """
+    st.markdown(logo_html, unsafe_allow_html=True)
+
 # Hintergrund setzen
 try:
     set_background("background.jpg")
 except Exception as e:
-    st.warning(f"⚠️ Hintergrundbild konnte nicht geladen werden: {e}")
+    st.warning(f"⚠️ Hintergrundbild konnte nicht geladen werden")
 
-# Stylischer Header mit Logo
-st.markdown(f"""
-    <div style="text-align: center; padding: 20px;">
-        <h1 style="font-size: 60px;">{LOGO}</h1>
-        <h1 style="margin-top: -20px;">{LOGO_NAME} KI Studio</h1>
-        <p style="color: #ccc; font-size: 18px;">Powered by Groq ⚡</p>
-    </div>
-""", unsafe_allow_html=True)
+# Logo setzen
+try:
+    set_logo("logo.png", width=200)
+except Exception as e:
+    st.warning(f"⚠️ Logo konnte nicht geladen werden - Emoji wird verwendet")
+    st.markdown(f"""
+        <div style="text-align: center; padding: 20px;">
+            <h1 style="font-size: 80px;">🧠</h1>
+            <h1 style="margin-top: -20px;">{LOGO_NAME} KI Studio</h1>
+            <p style="color: #888; font-size: 18px;">Powered by Groq ⚡</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 st.divider()
 
@@ -72,12 +89,18 @@ except:
 client = Groq(api_key=GROQ_API_KEY)
 
 with st.sidebar:
-    st.markdown(f"""
-        <div style="text-align: center; padding: 10px;">
-            <h1 style="font-size: 50px;">{LOGO}</h1>
-            <h3>increation</h3>
-        </div>
-    """, unsafe_allow_html=True)
+    try:
+        with open("logo.png", "rb") as f:
+            img_data = f.read()
+        b64_encoded = base64.b64encode(img_data).decode()
+        st.markdown(f"""
+            <div style="text-align: center; padding: 10px;">
+                <img src="data:image/png;base64,{b64_encoded}" width="100" style="border-radius: 15px;">
+                <h3 style="margin-top: 10px;">{LOGO_NAME}</h3>
+            </div>
+        """, unsafe_allow_html=True)
+    except:
+        st.markdown(f"### 🧠 {LOGO_NAME}")
     
     st.markdown("---")
     
@@ -113,7 +136,7 @@ if prompt:
         st.write(prompt)
     
     with st.chat_message("assistant"):
-        with st.spinner(f"{LOGO} denkt nach..."):
+        with st.spinner("KI denkt nach..."):
             try:
                 response = client.chat.completions.create(
                     model=model_choice,
@@ -126,4 +149,3 @@ if prompt:
                 st.session_state.messages.append({"role": "assistant", "content": answer})
             except Exception as e:
                 st.error(f"Fehler: {e}")
-
