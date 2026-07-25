@@ -1,70 +1,78 @@
 import streamlit as st
-from huggingface_hub import InferenceClient
+from groq import Groq
 
 st.set_page_config(page_title="Meine KI-Plattform", page_icon="🤖")
 
 st.title("🤖 Meine KI-Plattform")
-st.write("Willkommen! Diese Plattform ist komplett kostenlos.")
+st.write("Willkommen! Diese Plattform ist komplett kostenlos mit Groq!")
 
 st.header("💬 KI-Chat")
 
 try:
-    HF_TOKEN = st.secrets["HF_TOKEN"]
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 except:
-    st.error("Bitte HF_TOKEN in Streamlit Secrets setzen!")
+    st.error("Bitte GROQ_API_KEY in Streamlit Secrets setzen!")
+    st.info("👉 Holen Sie sich einen kostenlosen Key auf https://console.groq.com/")
     st.stop()
 
-# VIELE Modelle zur Auswahl
+client = Groq(api_key=GROQ_API_KEY)
+
+# Top Modelle bei Groq
 model_choice = st.selectbox("Modell wählen:", [
-    "meta-llama/Llama-3.3-70B-Instruct",
-    "meta-llama/Llama-3.2-3B-Instruct",
-    "meta-llama/Llama-3.2-1B-Instruct",
-    "mistralai/Mistral-7B-Instruct-v0.3",
-    "mistralai/Mistral-Nemo-Instruct-2407",
-    "microsoft/Phi-3-mini-4k-instruct",
-    "microsoft/Phi-3.5-mini-instruct",
-    "google/gemma-2-2b-it",
-    "google/gemma-2-9b-it",
-    "Qwen/Qwen2.5-7B-Instruct",
-    "Qwen/Qwen2.5-1.5B-Instruct",
-    "HuggingFaceH4/zephyr-7b-beta"
+    "llama-3.3-70b-versatile",
+    "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it"
 ])
 
-# Provider-Auswahl
-provider_choice = st.selectbox("Provider wählen:", [
-    "auto",
-    "together",
-    "fireworks",
-    "groq",
-    "cerebras",
-    "replicate"
-])
+# Chat-Verlauf
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-prompt = st.text_input("Stelle deine Frage:")
+# Zeige Chat-Verlauf
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-if st.button("🚀 Generieren"):
-    if prompt:
-        with st.spinner(f"KI ({model_choice}) denkt nach..."):
+# User Input
+prompt = st.chat_input("Stelle deine Frage...")
+
+if prompt:
+    # User-Nachricht anzeigen
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.write(prompt)
+    
+    # KI-Antwort generieren
+    with st.chat_message("assistant"):
+        with st.spinner("KI denkt nach..."):
             try:
-                client = InferenceClient(
-                    model=model_choice, 
-                    token=HF_TOKEN,
-                    provider=provider_choice if provider_choice != "auto" else None
+                response = client.chat.completions.create(
+                    model=model_choice,
+                    messages=st.session_state.messages,
+                    max_tokens=1000,
+                    temperature=0.7
                 )
-                response = client.chat_completion(
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=500
-                )
-                st.success("Fertig!")
-                st.write(response.choices[0].message.content)
+                answer = response.choices[0].message.content
+                st.write(answer)
+                st.session_state.messages.append({"role": "assistant", "content": answer})
             except Exception as e:
                 st.error(f"Fehler: {e}")
-                st.info("💡 Versuche ein anderes Modell oder Provider!")
-    else:
-        st.warning("Bitte eine Frage eingeben!")
+
+# Clear-Button
+if st.sidebar.button("🗑️ Chat löschen"):
+    st.session_state.messages = []
+    st.rerun()
 
 st.sidebar.markdown("### Info")
-st.sidebar.info("Powered by Hugging Face & Streamlit")
+st.sidebar.info("Powered by Groq ⚡ - ultraschnell & kostenlos")
 
-st.sidebar.markdown("### Verfügbare Modelle")
-st.sidebar.write("12+ Modelle verfügbar!")
+st.sidebar.markdown("### Modelle")
+st.sidebar.write("""
+- 🦙 Llama 3.3 70B
+- 🦙 Llama 3.1 70B  
+- 🦙 Llama 3.1 8B
+- 🎭 Mixtral 8x7B
+- 💎 Gemma2 9B
+""")
